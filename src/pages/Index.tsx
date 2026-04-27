@@ -1,7 +1,7 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { BriefcaseBusiness, CheckCircle2, ExternalLink, FileText, Layers3, Mail, PackageCheck, Sparkles } from "lucide-react";
 import type { Session } from "@supabase/supabase-js";
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import type { Tables } from "@/integrations/supabase/types";
@@ -10,6 +10,26 @@ const brandName = "CareerKit Collectives";
 type Product = Tables<"products">;
 
 const productIcons = [FileText, Mail, Layers3, BriefcaseBusiness, Mail, PackageCheck];
+
+const slugify = (value: string) =>
+  value
+    .toLowerCase()
+    .trim()
+    .replace(/&/g, "and")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+
+const getProductCategory = (product: Product) => {
+  const title = product.title.toLowerCase();
+
+  if (title.includes("bundle") || title.includes("kit")) return { label: "Bundles", value: "bundles" };
+  if (title.includes("resume")) return { label: "Resumes", value: "resumes" };
+  if (title.includes("cover")) return { label: "Cover Letters", value: "cover-letters" };
+  if (title.includes("expert") || title.includes("content")) return { label: "Expert Content", value: "expert-content" };
+  if (title.includes("email")) return { label: "Email Templates", value: "email-templates" };
+
+  return { label: "Templates", value: "templates" };
+};
 
 const setMeta = (name: string, content: string) => {
   let tag = document.querySelector(`meta[name="${name}"]`);
@@ -52,8 +72,17 @@ const ProductThumbnail = ({ product, index }: { product: Product; index: number 
   );
 };
 
-const ProductCard = ({ product, index }: { product: Product; index: number }) => (
-  <article className="group flex min-w-0 flex-col overflow-hidden rounded-lg border border-border bg-card shadow-soft transition duration-300 hover:-translate-y-1 hover:shadow-elevated">
+const ProductCard = ({ product, index, isHighlighted }: { product: Product; index: number; isHighlighted: boolean }) => {
+  const category = getProductCategory(product);
+
+  return (
+    <article
+      id={slugify(product.title)}
+      data-category={category.value}
+      className={`group scroll-mt-28 flex min-w-0 flex-col overflow-hidden rounded-lg border bg-card shadow-soft transition duration-300 hover:-translate-y-1 hover:shadow-elevated ${
+        isHighlighted ? "border-accent shadow-elevated animate-product-glow" : "border-border"
+      }`}
+    >
     <div className="aspect-[4/3] overflow-hidden border-b border-border">
       <ProductThumbnail product={product} index={index} />
     </div>
@@ -71,14 +100,32 @@ const ProductCard = ({ product, index }: { product: Product; index: number }) =>
         </Button>
       </div>
     </div>
-  </article>
-);
+    </article>
+  );
+};
 
 const Index = () => {
+  const location = useLocation();
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [session, setSession] = useState<Session | null>(null);
+  const [activeFilter, setActiveFilter] = useState("all");
+  const [highlightedProduct, setHighlightedProduct] = useState("");
+
+  const categories = useMemo(
+    () =>
+      Array.from(new Map(products.map((product) => {
+        const category = getProductCategory(product);
+        return [category.value, category];
+      })).values()),
+    [products],
+  );
+
+  const visibleProducts = useMemo(
+    () => (activeFilter === "all" ? products : products.filter((product) => getProductCategory(product).value === activeFilter)),
+    [activeFilter, products],
+  );
 
   useEffect(() => {
     document.title = "Career Templates – Professional Resume & Cover Letter Downloads";
@@ -120,6 +167,25 @@ const Index = () => {
 
     fetchProducts();
   }, []);
+
+  useEffect(() => {
+    if (loading || products.length === 0 || !location.hash) return;
+
+    const targetId = decodeURIComponent(location.hash.slice(1));
+    const targetProduct = products.find((product) => slugify(product.title) === targetId);
+
+    if (!targetProduct) return;
+
+    setActiveFilter("all");
+    setHighlightedProduct(targetId);
+
+    window.requestAnimationFrame(() => {
+      document.getElementById(targetId)?.scrollIntoView({ behavior: "smooth", block: "center" });
+    });
+
+    const timeout = window.setTimeout(() => setHighlightedProduct(""), 2400);
+    return () => window.clearTimeout(timeout);
+  }, [loading, location.hash, products]);
 
   return (
     <div className="min-h-screen bg-background text-foreground">
@@ -209,11 +275,32 @@ const Index = () => {
             <p className="py-12 text-center text-muted-foreground">No templates are available right now.</p>
           )}
           {!loading && !error && products.length > 0 && (
-            <div className="grid grid-cols-2 gap-3 sm:gap-5 md:grid-cols-3 lg:grid-cols-4">
-              {products.map((product, index) => (
-                <ProductCard key={product.id} product={product} index={index} />
-              ))}
-            </div>
+            <>
+              <div className="mb-8 flex gap-2 overflow-x-auto pb-2" aria-label="Filter templates by category">
+                {[{ label: "All", value: "all" }, ...categories].map((category) => {
+                  const isActive = activeFilter === category.value;
+                  return (
+                    <Button
+                      key={category.value}
+                      type="button"
+                      variant={isActive ? "default" : "outline"}
+                      size="sm"
+                      onClick={() => setActiveFilter(category.value)}
+                      className={`shrink-0 ${isActive ? "bg-primary text-primary-foreground hover:bg-primary/90" : "bg-card"}`}
+                      aria-pressed={isActive}
+                    >
+                      {category.label}
+                    </Button>
+                  );
+                })}
+              </div>
+              <div className="grid grid-cols-2 gap-3 sm:gap-5 md:grid-cols-3 lg:grid-cols-4">
+                {visibleProducts.map((product, index) => {
+                  const slug = slugify(product.title);
+                  return <ProductCard key={product.id} product={product} index={index} isHighlighted={highlightedProduct === slug} />;
+                })}
+              </div>
+            </>
           )}
         </section>
 
