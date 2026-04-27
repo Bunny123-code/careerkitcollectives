@@ -98,3 +98,20 @@
     background: hsl(var(--accent) / 0.28);
   }
 }
+
+@layer utilities {
+  @keyframes product-glow {
+    0%,
+    100% {
+      box-shadow: var(--shadow-soft);
+    }
+
+    45% {
+      box-shadow: 0 0 0 4px hsl(var(--accent) / 0.22), var(--shadow-elevated);
+    }
+  }
+
+  .animate-product-glow {
+    animation: product-glow 1.2s ease-in-out 2;
+  }
+}
