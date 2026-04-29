@@ -87,18 +87,30 @@ const Admin = () => {
   const [session, setSession] = useState<Session | null>(null);
   const [checkingSession, setCheckingSession] = useState(true);
   const [products, setProducts] = useState<Product[]>([]);
+  const [productTags, setProductTags] = useState<ProductTag[]>([]);
   const [loadingProducts, setLoadingProducts] = useState(true);
+  const [loadingTags, setLoadingTags] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [tagDialogOpen, setTagDialogOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
+  const [editingTag, setEditingTag] = useState<ProductTag | null>(null);
   const [form, setForm] = useState<ProductFormState>(emptyForm);
+  const [tagForm, setTagForm] = useState<TagFormState>(emptyTagForm);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState("");
   const [saving, setSaving] = useState(false);
+  const [savingTag, setSavingTag] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<Product | null>(null);
+  const [deleteTagTarget, setDeleteTagTarget] = useState<ProductTag | null>(null);
 
   const sortedProducts = useMemo(
     () => [...products].sort((a, b) => a.sort_order - b.sort_order || a.title.localeCompare(b.title)),
     [products],
+  );
+
+  const sortedTags = useMemo(
+    () => [...productTags].sort((a, b) => a.sort_order - b.sort_order || a.label.localeCompare(b.label)),
+    [productTags],
   );
 
   useEffect(() => {
