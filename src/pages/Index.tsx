@@ -8,6 +8,13 @@ import type { Tables } from "@/integrations/supabase/types";
 
 const brandName = "CareerKit Collectives";
 type Product = Tables<"products">;
+type ProductTag = {
+  id: string;
+  label: string;
+  anchor: string;
+  sort_order: number;
+  is_active: boolean;
+};
 
 const productIcons = [FileText, Mail, Layers3, BriefcaseBusiness, Mail, PackageCheck];
 
@@ -107,6 +114,7 @@ const ProductCard = ({ product, index, isHighlighted }: { product: Product; inde
 const Index = () => {
   const location = useLocation();
   const [products, setProducts] = useState<Product[]>([]);
+  const [productTags, setProductTags] = useState<ProductTag[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [session, setSession] = useState<Session | null>(null);
@@ -125,6 +133,11 @@ const Index = () => {
   const visibleProducts = useMemo(
     () => (activeFilter === "all" ? products : products.filter((product) => getProductCategory(product).value === activeFilter)),
     [activeFilter, products],
+  );
+
+  const sortedProductTags = useMemo(
+    () => [...productTags].sort((a, b) => a.sort_order - b.sort_order || a.label.localeCompare(b.label)),
+    [productTags],
   );
 
   useEffect(() => {
@@ -150,17 +163,26 @@ const Index = () => {
     const fetchProducts = async () => {
       setLoading(true);
       setError("");
-      const { data, error: fetchError } = await supabase
+      const [{ data, error: fetchError }, { data: tagData }] = await Promise.all([
+        supabase
         .from("products")
         .select("*")
         .eq("is_active", true)
         .order("sort_order", { ascending: true })
-        .order("created_at", { ascending: true });
+          .order("created_at", { ascending: true }),
+        (supabase as any)
+          .from("product_tags")
+          .select("*")
+          .eq("is_active", true)
+          .order("sort_order", { ascending: true })
+          .order("created_at", { ascending: true }),
+      ]);
 
       if (fetchError) {
         setError("Templates are temporarily unavailable. Please refresh in a moment.");
       } else {
         setProducts(data ?? []);
+        setProductTags((tagData ?? []) as ProductTag[]);
       }
       setLoading(false);
     };
@@ -172,10 +194,6 @@ const Index = () => {
     if (loading || products.length === 0 || !location.hash) return;
 
     const targetId = decodeURIComponent(location.hash.slice(1));
-    const targetProduct = products.find((product) => slugify(product.title) === targetId);
-
-    if (!targetProduct) return;
-
     setActiveFilter("all");
     setHighlightedProduct(targetId);
 
