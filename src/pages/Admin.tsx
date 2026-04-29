@@ -150,7 +150,7 @@ const Admin = () => {
 
   const fetchProductTags = async () => {
     setLoadingTags(true);
-    const { data, error } = await supabase
+    const { data, error } = await (supabase as any)
       .from("product_tags")
       .select("*")
       .order("sort_order", { ascending: true })
@@ -281,8 +281,8 @@ const Admin = () => {
       };
 
       const request = editingTag
-        ? supabase.from("product_tags").update(payload).eq("id", editingTag.id)
-        : supabase.from("product_tags").insert(payload);
+        ? (supabase as any).from("product_tags").update(payload).eq("id", editingTag.id)
+        : (supabase as any).from("product_tags").insert(payload);
 
       const { error } = await request;
       if (error) throw error;
@@ -313,7 +313,7 @@ const Admin = () => {
   const deleteProductTag = async () => {
     if (!deleteTagTarget) return;
 
-    const { error } = await supabase.from("product_tags").delete().eq("id", deleteTagTarget.id);
+    const { error } = await (supabase as any).from("product_tags").delete().eq("id", deleteTagTarget.id);
     if (error) {
       toast.error("Could not delete tag.");
     } else {
