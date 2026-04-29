@@ -497,6 +497,41 @@ const Admin = () => {
         </DialogContent>
       </Dialog>
 
+      <Dialog open={tagDialogOpen} onOpenChange={setTagDialogOpen}>
+        <DialogContent className="sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle>{editingTag ? "Edit Tag" : "Add New Tag"}</DialogTitle>
+            <DialogDescription>Set the button text and the product or section ID it should jump to.</DialogDescription>
+          </DialogHeader>
+
+          <form onSubmit={handleTagSubmit} className="grid gap-5">
+            <div className="grid gap-2">
+              <Label htmlFor="tag-label">Label</Label>
+              <Input id="tag-label" value={tagForm.label} onChange={(event) => setTagForm({ ...tagForm, label: event.target.value })} required />
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="tag-anchor">Target Anchor</Label>
+              <Input id="tag-anchor" value={tagForm.anchor} onChange={(event) => setTagForm({ ...tagForm, anchor: event.target.value })} placeholder="resume-template" required />
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="tag-sort-order">Sort Order</Label>
+              <Input id="tag-sort-order" type="number" value={tagForm.sort_order} onChange={(event) => setTagForm({ ...tagForm, sort_order: Number(event.target.value) })} required />
+            </div>
+            <label className="flex items-center gap-3 text-sm font-medium text-foreground">
+              <Checkbox checked={tagForm.is_active} onCheckedChange={(checked) => setTagForm({ ...tagForm, is_active: checked === true })} />
+              Active on public site
+            </label>
+            <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
+              <Button type="button" variant="outline" onClick={() => setTagDialogOpen(false)}>Cancel</Button>
+              <Button type="submit" className="bg-primary text-primary-foreground hover:bg-primary/90" disabled={savingTag}>
+                {savingTag && <Loader2 className="animate-spin" aria-hidden="true" />}
+                Save Tag
+              </Button>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
+
       <AlertDialog open={Boolean(deleteTarget)} onOpenChange={(open) => !open && setDeleteTarget(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
@@ -508,6 +543,23 @@ const Admin = () => {
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction onClick={deleteProduct} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog open={Boolean(deleteTagTarget)} onOpenChange={(open) => !open && setDeleteTagTarget(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete this tag?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This removes {deleteTagTarget?.label} from the landing page tag navigation. This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={deleteProductTag} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
               Delete
             </AlertDialogAction>
           </AlertDialogFooter>
