@@ -319,9 +319,21 @@ const Index = () => {
       </main>
 
       <footer className="bg-primary px-4 py-10 text-primary-foreground sm:px-6 lg:px-8">
-        <div className="mx-auto flex max-w-7xl flex-col justify-between gap-4 text-sm sm:flex-row sm:items-center">
-          <p>© {new Date().getFullYear()} {brandName}. All rights reserved.</p>
-          <p>Templates by {brandName}</p>
+        <div className="mx-auto flex max-w-7xl flex-col justify-between gap-5 text-sm sm:flex-row sm:items-start">
+          <div className="max-w-2xl space-y-3">
+            <p>© {new Date().getFullYear()} {brandName}. All rights reserved.</p>
+            <p className="text-primary-foreground/75">
+              Please note: product preview images contain decorative design elements. The actual downloadable file is a clean, professional Word resume template without these graphics.
+            </p>
+          </div>
+          <div className="flex flex-col gap-3 sm:items-end">
+            <p>Templates by {brandName}</p>
+            <nav className="flex flex-wrap gap-x-4 gap-y-2 text-primary-foreground/80" aria-label="Footer legal links">
+              <a href="/privacy-policy.html" className="transition hover:text-primary-foreground">Privacy Policy</a>
+              <a href="/terms.html" className="transition hover:text-primary-foreground">Terms and Conditions</a>
+              <a href="/disclaimer.html" className="transition hover:text-primary-foreground">Disclaimer</a>
+            </nav>
+          </div>
         </div>
       </footer>
     </div>
