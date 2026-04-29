@@ -294,24 +294,15 @@ const Index = () => {
           )}
           {!loading && !error && products.length > 0 && (
             <>
-              <div className="mb-8 flex gap-2 overflow-x-auto pb-2" aria-label="Filter templates by category">
-                {[{ label: "All", value: "all" }, ...categories].map((category) => {
-                  const isActive = activeFilter === category.value;
-                  return (
-                    <Button
-                      key={category.value}
-                      type="button"
-                      variant={isActive ? "default" : "outline"}
-                      size="sm"
-                      onClick={() => setActiveFilter(category.value)}
-                      className={`shrink-0 ${isActive ? "bg-primary text-primary-foreground hover:bg-primary/90" : "bg-card"}`}
-                      aria-pressed={isActive}
-                    >
-                      {category.label}
+              {sortedProductTags.length > 0 && (
+                <div className="mb-8 flex gap-2 overflow-x-auto pb-2" aria-label="Jump to template">
+                  {sortedProductTags.map((tag) => (
+                    <Button key={tag.id} asChild type="button" variant="outline" size="sm" className="shrink-0 bg-card">
+                      <a href={`#${tag.anchor.replace(/^#/, "")}`}>{tag.label}</a>
                     </Button>
-                  );
-                })}
-              </div>
+                  ))}
+                </div>
+              )}
               <div className="grid grid-cols-2 gap-3 sm:gap-5 md:grid-cols-3 lg:grid-cols-4">
                 {visibleProducts.map((product, index) => {
                   const slug = slugify(product.title);
