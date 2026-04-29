@@ -148,8 +148,27 @@ const Admin = () => {
     setLoadingProducts(false);
   };
 
+  const fetchProductTags = async () => {
+    setLoadingTags(true);
+    const { data, error } = await supabase
+      .from("product_tags")
+      .select("*")
+      .order("sort_order", { ascending: true })
+      .order("created_at", { ascending: true });
+
+    if (error) {
+      toast.error("Could not load product tags.");
+    } else {
+      setProductTags((data ?? []) as ProductTag[]);
+    }
+    setLoadingTags(false);
+  };
+
   useEffect(() => {
-    if (session) fetchProducts();
+    if (session) {
+      fetchProducts();
+      fetchProductTags();
+    }
   }, [session]);
 
   const openCreateDialog = () => {
@@ -166,6 +185,18 @@ const Admin = () => {
     setSelectedFile(null);
     setPreviewUrl(product.image_url ?? "");
     setDialogOpen(true);
+  };
+
+  const openCreateTagDialog = () => {
+    setEditingTag(null);
+    setTagForm({ ...emptyTagForm, sort_order: productTags.length + 1 });
+    setTagDialogOpen(true);
+  };
+
+  const openEditTagDialog = (tag: ProductTag) => {
+    setEditingTag(tag);
+    setTagForm(toTagFormState(tag));
+    setTagDialogOpen(true);
   };
 
   const handleFileChange = (event: ChangeEvent<HTMLInputElement>) => {
