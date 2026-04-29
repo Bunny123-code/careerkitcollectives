@@ -1,7 +1,7 @@
 import { ChangeEvent, FormEvent, useEffect, useMemo, useState } from "react";
 import { Navigate, useNavigate } from "react-router-dom";
 import type { Session } from "@supabase/supabase-js";
-import { Edit3, ImagePlus, Loader2, LogOut, Plus, Trash2 } from "lucide-react";
+import { Edit3, ImagePlus, Link2, Loader2, LogOut, Plus, Tags, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
@@ -14,12 +14,26 @@ import { supabase } from "@/integrations/supabase/client";
 import type { Tables, TablesInsert, TablesUpdate } from "@/integrations/supabase/types";
 
 type Product = Tables<"products">;
+type ProductTag = {
+  id: string;
+  label: string;
+  anchor: string;
+  sort_order: number;
+  is_active: boolean;
+  created_at: string;
+};
 type ProductFormState = {
   title: string;
   description: string;
   price: string;
   gumroad_url: string;
   image_url: string;
+  sort_order: number;
+  is_active: boolean;
+};
+type TagFormState = {
+  label: string;
+  anchor: string;
   sort_order: number;
   is_active: boolean;
 };
@@ -30,6 +44,13 @@ const emptyForm: ProductFormState = {
   price: "",
   gumroad_url: "",
   image_url: "",
+  sort_order: 0,
+  is_active: true,
+};
+
+const emptyTagForm: TagFormState = {
+  label: "",
+  anchor: "",
   sort_order: 0,
   is_active: true,
 };
@@ -52,6 +73,13 @@ const toFormState = (product: Product): ProductFormState => ({
   image_url: product.image_url ?? "",
   sort_order: product.sort_order,
   is_active: product.is_active,
+});
+
+const toTagFormState = (tag: ProductTag): TagFormState => ({
+  label: tag.label,
+  anchor: tag.anchor,
+  sort_order: tag.sort_order,
+  is_active: tag.is_active,
 });
 
 const Admin = () => {
