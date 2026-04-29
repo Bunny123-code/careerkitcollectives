@@ -354,6 +354,51 @@ const Admin = () => {
       </header>
 
       <section className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
+        <div className="mb-8 overflow-hidden rounded-lg border border-border bg-card shadow-soft">
+          <div className="flex flex-col gap-3 border-b border-border px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <h2 className="text-lg font-semibold text-primary">Product Jump Tags</h2>
+              <p className="mt-1 text-sm text-muted-foreground">Manage the landing page tag buttons and their target anchors.</p>
+            </div>
+            <Button onClick={openCreateTagDialog} variant="outline">
+              <Tags aria-hidden="true" /> Add Tag
+            </Button>
+          </div>
+
+          {loadingTags ? (
+            <div className="p-8 text-center text-muted-foreground">Loading tags…</div>
+          ) : sortedTags.length === 0 ? (
+            <div className="p-8 text-center text-muted-foreground">No tags yet.</div>
+          ) : (
+            <div className="divide-y divide-border">
+              {sortedTags.map((tag) => (
+                <article key={tag.id} className="grid gap-4 p-4 sm:grid-cols-[1fr_auto] sm:items-center">
+                  <div className="min-w-0">
+                    <div className="flex flex-wrap items-center gap-3">
+                      <h3 className="font-semibold text-primary">{tag.label}</h3>
+                      <span className="inline-flex items-center gap-1 rounded-sm bg-secondary px-2 py-1 text-xs font-medium text-secondary-foreground">
+                        <Link2 className="h-3 w-3" aria-hidden="true" /> #{tag.anchor}
+                      </span>
+                      <span className="rounded-sm bg-accent/10 px-2 py-1 text-xs font-medium text-primary">
+                        {tag.is_active ? "Active" : "Inactive"}
+                      </span>
+                    </div>
+                    <p className="mt-2 text-xs text-muted-foreground">Sort order: {tag.sort_order}</p>
+                  </div>
+                  <div className="flex gap-2">
+                    <Button variant="outline" size="sm" onClick={() => openEditTagDialog(tag)} aria-label={`Edit ${tag.label}`}>
+                      <Edit3 aria-hidden="true" /> Edit
+                    </Button>
+                    <Button variant="outline" size="sm" onClick={() => setDeleteTagTarget(tag)} aria-label={`Delete ${tag.label}`}>
+                      <Trash2 aria-hidden="true" /> Delete
+                    </Button>
+                  </div>
+                </article>
+              ))}
+            </div>
+          )}
+        </div>
+
         <div className="overflow-hidden rounded-lg border border-border bg-card shadow-soft">
           <div className="border-b border-border px-5 py-4">
             <h2 className="text-lg font-semibold text-primary">Existing Products</h2>
