@@ -8,6 +8,13 @@ import type { Tables } from "@/integrations/supabase/types";
 
 const brandName = "CareerKit Collectives";
 type Product = Tables<"products">;
+type ProductTag = {
+  id: string;
+  label: string;
+  anchor: string;
+  sort_order: number;
+  is_active: boolean;
+};
 
 const productIcons = [FileText, Mail, Layers3, BriefcaseBusiness, Mail, PackageCheck];
 
@@ -107,24 +114,15 @@ const ProductCard = ({ product, index, isHighlighted }: { product: Product; inde
 const Index = () => {
   const location = useLocation();
   const [products, setProducts] = useState<Product[]>([]);
+  const [productTags, setProductTags] = useState<ProductTag[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [session, setSession] = useState<Session | null>(null);
-  const [activeFilter, setActiveFilter] = useState("all");
   const [highlightedProduct, setHighlightedProduct] = useState("");
 
-  const categories = useMemo(
-    () =>
-      Array.from(new Map(products.map((product) => {
-        const category = getProductCategory(product);
-        return [category.value, category];
-      })).values()),
-    [products],
-  );
-
-  const visibleProducts = useMemo(
-    () => (activeFilter === "all" ? products : products.filter((product) => getProductCategory(product).value === activeFilter)),
-    [activeFilter, products],
+  const sortedProductTags = useMemo(
+    () => [...productTags].sort((a, b) => a.sort_order - b.sort_order || a.label.localeCompare(b.label)),
+    [productTags],
   );
 
   useEffect(() => {
@@ -150,17 +148,26 @@ const Index = () => {
     const fetchProducts = async () => {
       setLoading(true);
       setError("");
-      const { data, error: fetchError } = await supabase
+      const [{ data, error: fetchError }, { data: tagData }] = await Promise.all([
+        supabase
         .from("products")
         .select("*")
         .eq("is_active", true)
         .order("sort_order", { ascending: true })
-        .order("created_at", { ascending: true });
+          .order("created_at", { ascending: true }),
+        (supabase as any)
+          .from("product_tags")
+          .select("*")
+          .eq("is_active", true)
+          .order("sort_order", { ascending: true })
+          .order("created_at", { ascending: true }),
+      ]);
 
       if (fetchError) {
         setError("Templates are temporarily unavailable. Please refresh in a moment.");
       } else {
         setProducts(data ?? []);
+        setProductTags((tagData ?? []) as ProductTag[]);
       }
       setLoading(false);
     };
@@ -172,11 +179,6 @@ const Index = () => {
     if (loading || products.length === 0 || !location.hash) return;
 
     const targetId = decodeURIComponent(location.hash.slice(1));
-    const targetProduct = products.find((product) => slugify(product.title) === targetId);
-
-    if (!targetProduct) return;
-
-    setActiveFilter("all");
     setHighlightedProduct(targetId);
 
     window.requestAnimationFrame(() => {
@@ -276,26 +278,17 @@ const Index = () => {
           )}
           {!loading && !error && products.length > 0 && (
             <>
-              <div className="mb-8 flex gap-2 overflow-x-auto pb-2" aria-label="Filter templates by category">
-                {[{ label: "All", value: "all" }, ...categories].map((category) => {
-                  const isActive = activeFilter === category.value;
-                  return (
-                    <Button
-                      key={category.value}
-                      type="button"
-                      variant={isActive ? "default" : "outline"}
-                      size="sm"
-                      onClick={() => setActiveFilter(category.value)}
-                      className={`shrink-0 ${isActive ? "bg-primary text-primary-foreground hover:bg-primary/90" : "bg-card"}`}
-                      aria-pressed={isActive}
-                    >
-                      {category.label}
+              {sortedProductTags.length > 0 && (
+                <div className="mb-8 flex gap-2 overflow-x-auto pb-2" aria-label="Jump to template">
+                  {sortedProductTags.map((tag) => (
+                    <Button key={tag.id} asChild type="button" variant="outline" size="sm" className="shrink-0 bg-card">
+                      <a href={`#${tag.anchor.replace(/^#/, "")}`}>{tag.label}</a>
                     </Button>
-                  );
-                })}
-              </div>
+                  ))}
+                </div>
+              )}
               <div className="grid grid-cols-2 gap-3 sm:gap-5 md:grid-cols-3 lg:grid-cols-4">
-                {visibleProducts.map((product, index) => {
+                {products.map((product, index) => {
                   const slug = slugify(product.title);
                   return <ProductCard key={product.id} product={product} index={index} isHighlighted={highlightedProduct === slug} />;
                 })}
@@ -326,9 +319,21 @@ const Index = () => {
       </main>
 
       <footer className="bg-primary px-4 py-10 text-primary-foreground sm:px-6 lg:px-8">
-        <div className="mx-auto flex max-w-7xl flex-col justify-between gap-4 text-sm sm:flex-row sm:items-center">
-          <p>© {new Date().getFullYear()} {brandName}. All rights reserved.</p>
-          <p>Templates by {brandName}</p>
+        <div className="mx-auto flex max-w-7xl flex-col justify-between gap-5 text-sm sm:flex-row sm:items-start">
+          <div className="max-w-2xl space-y-3">
+            <p>© {new Date().getFullYear()} {brandName}. All rights reserved.</p>
+            <p className="text-primary-foreground/75">
+              Please note: product preview images contain decorative design elements. The actual downloadable file is a clean, professional Word resume template without these graphics.
+            </p>
+          </div>
+          <div className="flex flex-col gap-3 sm:items-end">
+            <p>Templates by {brandName}</p>
+            <nav className="flex flex-wrap gap-x-4 gap-y-2 text-primary-foreground/80" aria-label="Footer legal links">
+              <a href="/privacy-policy.html" className="transition hover:text-primary-foreground">Privacy Policy</a>
+              <a href="/terms.html" className="transition hover:text-primary-foreground">Terms and Conditions</a>
+              <a href="/disclaimer.html" className="transition hover:text-primary-foreground">Disclaimer</a>
+            </nav>
+          </div>
         </div>
       </footer>
     </div>

@@ -1,7 +1,7 @@
 import { ChangeEvent, FormEvent, useEffect, useMemo, useState } from "react";
 import { Navigate, useNavigate } from "react-router-dom";
 import type { Session } from "@supabase/supabase-js";
-import { Edit3, ImagePlus, Loader2, LogOut, Plus, Trash2 } from "lucide-react";
+import { Edit3, ImagePlus, Link2, Loader2, LogOut, Plus, Tags, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
@@ -14,12 +14,26 @@ import { supabase } from "@/integrations/supabase/client";
 import type { Tables, TablesInsert, TablesUpdate } from "@/integrations/supabase/types";
 
 type Product = Tables<"products">;
+type ProductTag = {
+  id: string;
+  label: string;
+  anchor: string;
+  sort_order: number;
+  is_active: boolean;
+  created_at: string;
+};
 type ProductFormState = {
   title: string;
   description: string;
   price: string;
   gumroad_url: string;
   image_url: string;
+  sort_order: number;
+  is_active: boolean;
+};
+type TagFormState = {
+  label: string;
+  anchor: string;
   sort_order: number;
   is_active: boolean;
 };
@@ -30,6 +44,13 @@ const emptyForm: ProductFormState = {
   price: "",
   gumroad_url: "",
   image_url: "",
+  sort_order: 0,
+  is_active: true,
+};
+
+const emptyTagForm: TagFormState = {
+  label: "",
+  anchor: "",
   sort_order: 0,
   is_active: true,
 };
@@ -54,23 +75,42 @@ const toFormState = (product: Product): ProductFormState => ({
   is_active: product.is_active,
 });
 
+const toTagFormState = (tag: ProductTag): TagFormState => ({
+  label: tag.label,
+  anchor: tag.anchor,
+  sort_order: tag.sort_order,
+  is_active: tag.is_active,
+});
+
 const Admin = () => {
   const navigate = useNavigate();
   const [session, setSession] = useState<Session | null>(null);
   const [checkingSession, setCheckingSession] = useState(true);
   const [products, setProducts] = useState<Product[]>([]);
+  const [productTags, setProductTags] = useState<ProductTag[]>([]);
   const [loadingProducts, setLoadingProducts] = useState(true);
+  const [loadingTags, setLoadingTags] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [tagDialogOpen, setTagDialogOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
+  const [editingTag, setEditingTag] = useState<ProductTag | null>(null);
   const [form, setForm] = useState<ProductFormState>(emptyForm);
+  const [tagForm, setTagForm] = useState<TagFormState>(emptyTagForm);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState("");
   const [saving, setSaving] = useState(false);
+  const [savingTag, setSavingTag] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<Product | null>(null);
+  const [deleteTagTarget, setDeleteTagTarget] = useState<ProductTag | null>(null);
 
   const sortedProducts = useMemo(
     () => [...products].sort((a, b) => a.sort_order - b.sort_order || a.title.localeCompare(b.title)),
     [products],
+  );
+
+  const sortedTags = useMemo(
+    () => [...productTags].sort((a, b) => a.sort_order - b.sort_order || a.label.localeCompare(b.label)),
+    [productTags],
   );
 
   useEffect(() => {
@@ -108,8 +148,27 @@ const Admin = () => {
     setLoadingProducts(false);
   };
 
+  const fetchProductTags = async () => {
+    setLoadingTags(true);
+    const { data, error } = await (supabase as any)
+      .from("product_tags")
+      .select("*")
+      .order("sort_order", { ascending: true })
+      .order("created_at", { ascending: true });
+
+    if (error) {
+      toast.error("Could not load product tags.");
+    } else {
+      setProductTags((data ?? []) as ProductTag[]);
+    }
+    setLoadingTags(false);
+  };
+
   useEffect(() => {
-    if (session) fetchProducts();
+    if (session) {
+      fetchProducts();
+      fetchProductTags();
+    }
   }, [session]);
 
   const openCreateDialog = () => {
@@ -126,6 +185,18 @@ const Admin = () => {
     setSelectedFile(null);
     setPreviewUrl(product.image_url ?? "");
     setDialogOpen(true);
+  };
+
+  const openCreateTagDialog = () => {
+    setEditingTag(null);
+    setTagForm({ ...emptyTagForm, sort_order: productTags.length + 1 });
+    setTagDialogOpen(true);
+  };
+
+  const openEditTagDialog = (tag: ProductTag) => {
+    setEditingTag(tag);
+    setTagForm(toTagFormState(tag));
+    setTagDialogOpen(true);
   };
 
   const handleFileChange = (event: ChangeEvent<HTMLInputElement>) => {
@@ -197,6 +268,35 @@ const Admin = () => {
     }
   };
 
+  const handleTagSubmit = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    setSavingTag(true);
+
+    try {
+      const payload = {
+        label: tagForm.label.trim(),
+        anchor: tagForm.anchor.trim().replace(/^#/, ""),
+        sort_order: Number(tagForm.sort_order) || 0,
+        is_active: tagForm.is_active,
+      };
+
+      const request = editingTag
+        ? (supabase as any).from("product_tags").update(payload).eq("id", editingTag.id)
+        : (supabase as any).from("product_tags").insert(payload);
+
+      const { error } = await request;
+      if (error) throw error;
+
+      toast.success(editingTag ? "Tag updated." : "Tag added.");
+      setTagDialogOpen(false);
+      await fetchProductTags();
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Could not save tag.");
+    } finally {
+      setSavingTag(false);
+    }
+  };
+
   const deleteProduct = async () => {
     if (!deleteTarget) return;
 
@@ -207,6 +307,19 @@ const Admin = () => {
       toast.success("Product deleted.");
       setDeleteTarget(null);
       await fetchProducts();
+    }
+  };
+
+  const deleteProductTag = async () => {
+    if (!deleteTagTarget) return;
+
+    const { error } = await (supabase as any).from("product_tags").delete().eq("id", deleteTagTarget.id);
+    if (error) {
+      toast.error("Could not delete tag.");
+    } else {
+      toast.success("Tag deleted.");
+      setDeleteTagTarget(null);
+      await fetchProductTags();
     }
   };
 
@@ -241,6 +354,51 @@ const Admin = () => {
       </header>
 
       <section className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
+        <div className="mb-8 overflow-hidden rounded-lg border border-border bg-card shadow-soft">
+          <div className="flex flex-col gap-3 border-b border-border px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <h2 className="text-lg font-semibold text-primary">Product Jump Tags</h2>
+              <p className="mt-1 text-sm text-muted-foreground">Manage the landing page tag buttons and their target anchors.</p>
+            </div>
+            <Button onClick={openCreateTagDialog} variant="outline">
+              <Tags aria-hidden="true" /> Add Tag
+            </Button>
+          </div>
+
+          {loadingTags ? (
+            <div className="p-8 text-center text-muted-foreground">Loading tags…</div>
+          ) : sortedTags.length === 0 ? (
+            <div className="p-8 text-center text-muted-foreground">No tags yet.</div>
+          ) : (
+            <div className="divide-y divide-border">
+              {sortedTags.map((tag) => (
+                <article key={tag.id} className="grid gap-4 p-4 sm:grid-cols-[1fr_auto] sm:items-center">
+                  <div className="min-w-0">
+                    <div className="flex flex-wrap items-center gap-3">
+                      <h3 className="font-semibold text-primary">{tag.label}</h3>
+                      <span className="inline-flex items-center gap-1 rounded-sm bg-secondary px-2 py-1 text-xs font-medium text-secondary-foreground">
+                        <Link2 className="h-3 w-3" aria-hidden="true" /> #{tag.anchor}
+                      </span>
+                      <span className="rounded-sm bg-accent/10 px-2 py-1 text-xs font-medium text-primary">
+                        {tag.is_active ? "Active" : "Inactive"}
+                      </span>
+                    </div>
+                    <p className="mt-2 text-xs text-muted-foreground">Sort order: {tag.sort_order}</p>
+                  </div>
+                  <div className="flex gap-2">
+                    <Button variant="outline" size="sm" onClick={() => openEditTagDialog(tag)} aria-label={`Edit ${tag.label}`}>
+                      <Edit3 aria-hidden="true" /> Edit
+                    </Button>
+                    <Button variant="outline" size="sm" onClick={() => setDeleteTagTarget(tag)} aria-label={`Delete ${tag.label}`}>
+                      <Trash2 aria-hidden="true" /> Delete
+                    </Button>
+                  </div>
+                </article>
+              ))}
+            </div>
+          )}
+        </div>
+
         <div className="overflow-hidden rounded-lg border border-border bg-card shadow-soft">
           <div className="border-b border-border px-5 py-4">
             <h2 className="text-lg font-semibold text-primary">Existing Products</h2>
@@ -339,6 +497,41 @@ const Admin = () => {
         </DialogContent>
       </Dialog>
 
+      <Dialog open={tagDialogOpen} onOpenChange={setTagDialogOpen}>
+        <DialogContent className="sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle>{editingTag ? "Edit Tag" : "Add New Tag"}</DialogTitle>
+            <DialogDescription>Set the button text and the product or section ID it should jump to.</DialogDescription>
+          </DialogHeader>
+
+          <form onSubmit={handleTagSubmit} className="grid gap-5">
+            <div className="grid gap-2">
+              <Label htmlFor="tag-label">Label</Label>
+              <Input id="tag-label" value={tagForm.label} onChange={(event) => setTagForm({ ...tagForm, label: event.target.value })} required />
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="tag-anchor">Target Anchor</Label>
+              <Input id="tag-anchor" value={tagForm.anchor} onChange={(event) => setTagForm({ ...tagForm, anchor: event.target.value })} placeholder="resume-template" required />
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="tag-sort-order">Sort Order</Label>
+              <Input id="tag-sort-order" type="number" value={tagForm.sort_order} onChange={(event) => setTagForm({ ...tagForm, sort_order: Number(event.target.value) })} required />
+            </div>
+            <label className="flex items-center gap-3 text-sm font-medium text-foreground">
+              <Checkbox checked={tagForm.is_active} onCheckedChange={(checked) => setTagForm({ ...tagForm, is_active: checked === true })} />
+              Active on public site
+            </label>
+            <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
+              <Button type="button" variant="outline" onClick={() => setTagDialogOpen(false)}>Cancel</Button>
+              <Button type="submit" className="bg-primary text-primary-foreground hover:bg-primary/90" disabled={savingTag}>
+                {savingTag && <Loader2 className="animate-spin" aria-hidden="true" />}
+                Save Tag
+              </Button>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
+
       <AlertDialog open={Boolean(deleteTarget)} onOpenChange={(open) => !open && setDeleteTarget(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
@@ -350,6 +543,23 @@ const Admin = () => {
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction onClick={deleteProduct} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog open={Boolean(deleteTagTarget)} onOpenChange={(open) => !open && setDeleteTagTarget(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete this tag?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This removes {deleteTagTarget?.label} from the landing page tag navigation. This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={deleteProductTag} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
               Delete
             </AlertDialogAction>
           </AlertDialogFooter>
