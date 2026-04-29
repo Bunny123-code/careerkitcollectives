@@ -118,22 +118,7 @@ const Index = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [session, setSession] = useState<Session | null>(null);
-  const [activeFilter, setActiveFilter] = useState("all");
   const [highlightedProduct, setHighlightedProduct] = useState("");
-
-  const categories = useMemo(
-    () =>
-      Array.from(new Map(products.map((product) => {
-        const category = getProductCategory(product);
-        return [category.value, category];
-      })).values()),
-    [products],
-  );
-
-  const visibleProducts = useMemo(
-    () => (activeFilter === "all" ? products : products.filter((product) => getProductCategory(product).value === activeFilter)),
-    [activeFilter, products],
-  );
 
   const sortedProductTags = useMemo(
     () => [...productTags].sort((a, b) => a.sort_order - b.sort_order || a.label.localeCompare(b.label)),
@@ -194,7 +179,6 @@ const Index = () => {
     if (loading || products.length === 0 || !location.hash) return;
 
     const targetId = decodeURIComponent(location.hash.slice(1));
-    setActiveFilter("all");
     setHighlightedProduct(targetId);
 
     window.requestAnimationFrame(() => {
@@ -304,7 +288,7 @@ const Index = () => {
                 </div>
               )}
               <div className="grid grid-cols-2 gap-3 sm:gap-5 md:grid-cols-3 lg:grid-cols-4">
-                {visibleProducts.map((product, index) => {
+                {products.map((product, index) => {
                   const slug = slugify(product.title);
                   return <ProductCard key={product.id} product={product} index={index} isHighlighted={highlightedProduct === slug} />;
                 })}
