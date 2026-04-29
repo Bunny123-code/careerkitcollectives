@@ -14,6 +14,33 @@ export type Database = {
   }
   public: {
     Tables: {
+      product_tags: {
+        Row: {
+          anchor: string
+          created_at: string
+          id: string
+          is_active: boolean
+          label: string
+          sort_order: number
+        }
+        Insert: {
+          anchor: string
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          label: string
+          sort_order?: number
+        }
+        Update: {
+          anchor?: string
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          label?: string
+          sort_order?: number
+        }
+        Relationships: []
+      }
       products: {
         Row: {
           created_at: string
