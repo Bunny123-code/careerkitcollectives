@@ -268,6 +268,35 @@ const Admin = () => {
     }
   };
 
+  const handleTagSubmit = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    setSavingTag(true);
+
+    try {
+      const payload = {
+        label: tagForm.label.trim(),
+        anchor: tagForm.anchor.trim().replace(/^#/, ""),
+        sort_order: Number(tagForm.sort_order) || 0,
+        is_active: tagForm.is_active,
+      };
+
+      const request = editingTag
+        ? supabase.from("product_tags").update(payload).eq("id", editingTag.id)
+        : supabase.from("product_tags").insert(payload);
+
+      const { error } = await request;
+      if (error) throw error;
+
+      toast.success(editingTag ? "Tag updated." : "Tag added.");
+      setTagDialogOpen(false);
+      await fetchProductTags();
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Could not save tag.");
+    } finally {
+      setSavingTag(false);
+    }
+  };
+
   const deleteProduct = async () => {
     if (!deleteTarget) return;
 
@@ -278,6 +307,19 @@ const Admin = () => {
       toast.success("Product deleted.");
       setDeleteTarget(null);
       await fetchProducts();
+    }
+  };
+
+  const deleteProductTag = async () => {
+    if (!deleteTagTarget) return;
+
+    const { error } = await supabase.from("product_tags").delete().eq("id", deleteTagTarget.id);
+    if (error) {
+      toast.error("Could not delete tag.");
+    } else {
+      toast.success("Tag deleted.");
+      setDeleteTagTarget(null);
+      await fetchProductTags();
     }
   };
 
