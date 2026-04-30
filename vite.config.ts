@@ -6,8 +6,8 @@ import { componentTagger } from "lovable-tagger";
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), "");
-  const repositoryName = env.VITE_GITHUB_PAGES_REPOSITORY ?? "careerkitcollectives";
-  const base = mode === "development" ? "/" : `/${repositoryName.replace(/^\/+|\/+$/g, "")}/`;
+  const repositoryName = env.VITE_GITHUB_PAGES_REPOSITORY?.replace(/^\/+|\/+$/g, "");
+  const base = repositoryName ? `/${repositoryName}/` : "/";
 
   return {
     base,
