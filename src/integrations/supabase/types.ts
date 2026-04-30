@@ -14,24 +14,6 @@ export type Database = {
   }
   public: {
     Tables: {
-      admin_email_allowlist: {
-        Row: {
-          created_at: string
-          email: string
-          id: string
-        }
-        Insert: {
-          created_at?: string
-          email: string
-          id?: string
-        }
-        Update: {
-          created_at?: string
-          email?: string
-          id?: string
-        }
-        Relationships: []
-      }
       product_tags: {
         Row: {
           anchor: string
@@ -121,7 +103,6 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      claim_admin_role: { Args: never; Returns: undefined }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
