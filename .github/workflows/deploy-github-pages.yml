@@ -32,6 +32,8 @@ jobs:
 
       - name: Build
         run: npm run build
+        env:
+          VITE_GITHUB_PAGES_REPOSITORY: ${{ github.event.repository.name }}
 
       - name: Add SPA fallback
         run: cp dist/index.html dist/404.html
