@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
 import { BriefcaseBusiness, CheckCircle2, ExternalLink, FileText, Layers3, Mail, PackageCheck, Sparkles } from "lucide-react";
-import type { Session } from "@supabase/supabase-js";
 import { Link, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
@@ -118,7 +117,6 @@ const Index = () => {
   const [productTags, setProductTags] = useState<ProductTag[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const [session, setSession] = useState<Session | null>(null);
   const [highlightedProduct, setHighlightedProduct] = useState("");
 
   const sortedProductTags = useMemo(
@@ -133,16 +131,6 @@ const Index = () => {
       "Premium editable resume, cover letter, expert content, email, and career bundle templates from CareerKit Collectives.",
     );
     setMeta("robots", "index, follow");
-  }, []);
-
-  useEffect(() => {
-    const { data: listener } = supabase.auth.onAuthStateChange((_event, currentSession) => {
-      setSession(currentSession);
-    });
-
-    supabase.auth.getSession().then(({ data }) => setSession(data.session));
-
-    return () => listener.subscription.unsubscribe();
   }, []);
 
   useEffect(() => {
@@ -204,11 +192,9 @@ const Index = () => {
             <a href="#products" className="text-sm font-medium text-muted-foreground transition hover:text-primary">
               Products
             </a>
-            {session && (
-              <Link to="/admin" className="text-sm font-medium text-muted-foreground transition hover:text-primary">
-                Admin
-              </Link>
-            )}
+            <Link to="/admin" className="text-sm font-medium text-muted-foreground transition hover:text-primary">
+              Admin
+            </Link>
           </div>
         </nav>
       </header>

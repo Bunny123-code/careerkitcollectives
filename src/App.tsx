@@ -15,16 +15,16 @@ const App = () => (
     <TooltipProvider>
       <Toaster />
       <Sonner />
-<<<<<<< HEAD
-      <BrowserRouter basename="/careerkitcollectives">
-=======
       <BrowserRouter basename={import.meta.env.BASE_URL}>
->>>>>>> 6d2c31301ca5a97912847e78f5e979685f14bf21
         <Routes>
           <Route path="/" element={<Index />} />
           <Route path="/products" element={<Index />} />
+          <Route path="/careerkitcollectives" element={<Index />} />
+          <Route path="/careerkitcollectives/products" element={<Index />} />
           <Route path="/admin/login" element={<AdminLogin />} />
+          <Route path="/careerkitcollectives/admin/login" element={<AdminLogin />} />
           <Route path="/admin" element={<Admin />} />
+          <Route path="/careerkitcollectives/admin" element={<Admin />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>
