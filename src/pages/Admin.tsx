@@ -30,6 +30,7 @@ type ProductFormState = {
   image_url: string;
   sort_order: number;
   is_active: boolean;
+  anchor: string;
 };
 type TagFormState = {
   label: string;
@@ -46,6 +47,7 @@ const emptyForm: ProductFormState = {
   image_url: "",
   sort_order: 0,
   is_active: true,
+  anchor: "",
 };
 
 const emptyTagForm: TagFormState = {
@@ -73,6 +75,7 @@ const toFormState = (product: Product): ProductFormState => ({
   image_url: product.image_url ?? "",
   sort_order: product.sort_order,
   is_active: product.is_active,
+  anchor: product.anchor ?? "",
 });
 
 const toTagFormState = (tag: ProductTag): TagFormState => ({
@@ -275,6 +278,7 @@ const Admin = () => {
         image_url: imageUrl,
         sort_order: Number(form.sort_order) || 0,
         is_active: form.is_active,
+        anchor: form.anchor.trim().toLowerCase().replace(/\s+/g, "-"),
       };
 
       const request = editingProduct
@@ -514,6 +518,20 @@ const Admin = () => {
             <div className="grid gap-2">
               <Label htmlFor="gumroad-url">Purchase URL</Label>
               <Input id="gumroad-url" type="url" value={form.gumroad_url} onChange={(event) => setForm({ ...form, gumroad_url: event.target.value })} required />
+            </div>
+            {/* New anchor field for direct product linking */}
+            <div className="grid gap-2">
+              <Label htmlFor="product-anchor">Anchor ID</Label>
+              <Input
+                id="product-anchor"
+                value={form.anchor}
+                onChange={(e) => setForm({ ...form, anchor: e.target.value })}
+                placeholder="product-resume-template"
+                required
+              />
+              <p className="text-xs text-muted-foreground">
+                Used for direct links (e.g., #product-resume-template). Lowercase, hyphens instead of spaces.
+              </p>
             </div>
             <div className="grid gap-3">
               <Label htmlFor="image-upload">Product Image</Label>
