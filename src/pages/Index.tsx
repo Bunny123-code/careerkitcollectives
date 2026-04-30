@@ -7,6 +7,7 @@ import { supabase } from "@/integrations/supabase/client";
 import type { Tables } from "@/integrations/supabase/types";
 
 const brandName = "CareerKit Collectives";
+const appBasePath = import.meta.env.BASE_URL;
 type Product = Tables<"products">;
 type ProductTag = {
   id: string;
@@ -329,9 +330,9 @@ const Index = () => {
           <div className="flex flex-col gap-3 sm:items-end">
             <p>Templates by {brandName}</p>
             <nav className="flex flex-wrap gap-x-4 gap-y-2 text-primary-foreground/80" aria-label="Footer legal links">
-              <a href="/privacy-policy.html" className="transition hover:text-primary-foreground">Privacy Policy</a>
-              <a href="/terms.html" className="transition hover:text-primary-foreground">Terms and Conditions</a>
-              <a href="/disclaimer.html" className="transition hover:text-primary-foreground">Disclaimer</a>
+              <a href={`${appBasePath}privacy-policy.html`} className="transition hover:text-primary-foreground">Privacy Policy</a>
+              <a href={`${appBasePath}terms.html`} className="transition hover:text-primary-foreground">Terms and Conditions</a>
+              <a href={`${appBasePath}disclaimer.html`} className="transition hover:text-primary-foreground">Disclaimer</a>
             </nav>
           </div>
         </div>
