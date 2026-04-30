@@ -86,6 +86,8 @@ const Admin = () => {
   const navigate = useNavigate();
   const [session, setSession] = useState<Session | null>(null);
   const [checkingSession, setCheckingSession] = useState(true);
+  const [checkingAdminRole, setCheckingAdminRole] = useState(true);
+  const [isAdmin, setIsAdmin] = useState(false);
   const [products, setProducts] = useState<Product[]>([]);
   const [productTags, setProductTags] = useState<ProductTag[]>([]);
   const [loadingProducts, setLoadingProducts] = useState(true);
@@ -122,15 +124,39 @@ const Admin = () => {
     const { data: listener } = supabase.auth.onAuthStateChange((_event, currentSession) => {
       setSession(currentSession);
       setCheckingSession(false);
+      if (!currentSession) {
+        setIsAdmin(false);
+        setCheckingAdminRole(false);
+      }
     });
 
     supabase.auth.getSession().then(({ data }) => {
       setSession(data.session);
       setCheckingSession(false);
+      if (!data.session) setCheckingAdminRole(false);
     });
 
     return () => listener.subscription.unsubscribe();
   }, []);
+
+  useEffect(() => {
+    if (!session) return;
+
+    const checkAdminRole = async () => {
+      setCheckingAdminRole(true);
+      const { data, error } = await (supabase as any)
+        .from("user_roles")
+        .select("role")
+        .eq("user_id", session.user.id)
+        .eq("role", "admin")
+        .maybeSingle();
+
+      setIsAdmin(!error && data?.role === "admin");
+      setCheckingAdminRole(false);
+    };
+
+    checkAdminRole();
+  }, [session]);
 
   const fetchProducts = async () => {
     setLoadingProducts(true);
@@ -165,11 +191,11 @@ const Admin = () => {
   };
 
   useEffect(() => {
-    if (session) {
+    if (session && isAdmin) {
       fetchProducts();
       fetchProductTags();
     }
-  }, [session]);
+  }, [session, isAdmin]);
 
   const openCreateDialog = () => {
     setEditingProduct(null);
@@ -328,11 +354,25 @@ const Admin = () => {
     navigate("/admin/login", { replace: true });
   };
 
-  if (checkingSession) {
+  if (checkingSession || (session && checkingAdminRole)) {
     return <div className="flex min-h-screen items-center justify-center bg-background text-muted-foreground">Checking access…</div>;
   }
 
   if (!session) return <Navigate to="/admin/login" replace />;
+
+  if (!isAdmin) {
+    return (
+      <main className="flex min-h-screen items-center justify-center bg-secondary/40 px-4 py-12">
+        <section className="w-full max-w-md rounded-lg border border-border bg-card p-6 text-center shadow-elevated">
+          <h1 className="text-2xl font-bold text-primary">Admin access required</h1>
+          <p className="mt-3 text-sm leading-6 text-muted-foreground">This account is signed in, but it has not been assigned the admin role.</p>
+          <Button onClick={signOut} className="mt-6 bg-primary text-primary-foreground hover:bg-primary/90">
+            <LogOut aria-hidden="true" /> Sign Out
+          </Button>
+        </section>
+      </main>
+    );
+  }
 
   return (
     <main className="min-h-screen bg-secondary/40">
