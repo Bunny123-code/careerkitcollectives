@@ -204,11 +204,9 @@ const Index = () => {
             <a href="#products" className="text-sm font-medium text-muted-foreground transition hover:text-primary">
               Products
             </a>
-            {session && (
-              <Link to="/admin" className="text-sm font-medium text-muted-foreground transition hover:text-primary">
-                Admin
-              </Link>
-            )}
+            <Link to="/admin" className="text-sm font-medium text-muted-foreground transition hover:text-primary">
+              Admin
+            </Link>
           </div>
         </nav>
       </header>
